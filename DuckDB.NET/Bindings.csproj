@@ -4,7 +4,7 @@
     <Description>DuckDB Bindings for C#.</Description>
     <PackageReleaseNotes>Added binding for extract statements api.</PackageReleaseNotes>
     <RootNamespace>DuckDB.NET</RootNamespace>
-    <RuntimeIdentifiers>win-x86;win-x64;linux-x64;linux-arm64;osx</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-x64;linux-arm64</RuntimeIdentifiers>
     <DuckDbArtifactRoot>https://github.com/duckdb/duckdb/releases/download/v0.8.1</DuckDbArtifactRoot>
 	<SignAssembly>True</SignAssembly>
 	<AssemblyOriginatorKeyFile>..\keyPair.snk</AssemblyOriginatorKeyFile>
@@ -18,9 +18,17 @@
   <Target Name="DownloadNativeLibs" BeforeTargets="GenerateAdditionalSources" Condition="'$(BuildType)' == 'Full' ">
     <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=win-x86;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-i386.zip" />
     <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=win-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-amd64.zip" />
-    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-amd64.zip" />
-    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-aarch64.zip" />
-    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=osx;LibUrl=$(DuckDbArtifactRoot)/libduckdb-osx-universal.zip" />
+    <!--<MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-amd64.zip" />-->
+    <!--<MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-aarch64.zip" />-->
+    <!--<MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=osx;LibUrl=$(DuckDbArtifactRoot)/libduckdb-osx-universal.zip" />-->
+  </Target>
+  <Target Name="UnzipCustomLinuxamd64Lib" BeforeTargets="GenerateAdditionalSources" AfterTargets="DownloadNativeLibs" Condition="'$(BuildType)' == 'Full' ">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\obj\runtimes\linux-x64\native" />
+    <Unzip DestinationFolder="$(MSBuildProjectDirectory)\obj\runtimes\linux-x64\native" SourceFiles="D:\duckdb\lib\libduckdb-linux-amd64.zip" />
+  </Target>
+  <Target Name="UnzipCustomLinuxarm64Lib" BeforeTargets="GenerateAdditionalSources" AfterTargets="UnzipCustomLinuxamd64Lib" Condition="'$(BuildType)' == 'Full' ">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\obj\runtimes\linux-arm64\native" />
+    <Unzip DestinationFolder="$(MSBuildProjectDirectory)\obj\runtimes\linux-arm64\native" SourceFiles="D:\duckdb\lib\libduckdb-linux-aarch64.zip" />
   </Target>
   <Target Name="CleanNativeLibs" BeforeTargets="Clean" Condition="'$(BuildType)' == 'Full' ">
     <RemoveDir Directories="obj\runtimes" />
