@@ -2,7 +2,9 @@
 using System;
 using System.IO;
 using System.Reflection;
+using DuckDB.NET.Native;
 
+#nullable enable
 namespace DuckDB.NET.Test.Helpers;
 
 static class NativeLibraryHelper
@@ -18,7 +20,7 @@ static class NativeLibraryHelper
                NativeLibrary.TryLoad(Path.Join("runtimes", rid, "native", "libduckdb"), Assembly.GetExecutingAssembly(), DllImportSearchPath.AssemblyDirectory, out _);
     }
 
-    private static string GetRid()
+    private static string? GetRid()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -29,7 +31,7 @@ static class NativeLibraryHelper
         {
             return RuntimeInformation.ProcessArchitecture switch
             {
-                Architecture.X64 => "linux-x64",
+                Architecture.X64 => NativeLibraryResolver.ShouldUseGlibc217Build() ? "linux-x64-glibc217" : "linux-x64",
                 Architecture.Arm64 => "linux-arm64",
                 _ => null,
             };

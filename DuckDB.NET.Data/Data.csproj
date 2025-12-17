@@ -32,8 +32,66 @@ Updated to DuckDB v1.4.3
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
     <PackageReference Include="System.Memory" Version="4.6.0" />
   </ItemGroup>
-  <ItemGroup>
+  <!-- Normal project reference for ManagedOnly and Full -->
+  <ItemGroup Condition="'$(BuildType)' != 'Custom'">
     <ProjectReference Include="..\DuckDB.NET.Bindings\Bindings.csproj" />
+  </ItemGroup>
+
+  <!-- Private project reference for Custom - embed Bindings into Data package -->
+  <ItemGroup Condition="'$(BuildType)' == 'Custom'">
+    <ProjectReference Include="..\DuckDB.NET.Bindings\Bindings.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Include Bindings assembly in Data package for Custom -->
+  <PropertyGroup Condition="'$(BuildType)' == 'Custom'">
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeBindingsAssembly</TargetsForTfmSpecificBuildOutput>
+    <DuckDbArtifactRoot Condition="'$(DuckDbArtifactRoot)' == ''">https://github.com/duckdb/duckdb/releases/download/v1.4.3</DuckDbArtifactRoot>
+    <CustomNativeLibZip Condition="'$(CustomNativeLibZip)' == ''">D:\duckdb\lib\libduckdb-linux-amd64-glibc217.zip</CustomNativeLibZip>
+  </PropertyGroup>
+
+  <Target Name="IncludeBindingsAssembly" Condition="'$(BuildType)' == 'Custom'">
+    <ItemGroup>
+      <BuildOutputInPackage Include="$(OutputPath)DuckDB.NET.Bindings.dll" />
+      <BuildOutputInPackage Include="$(OutputPath)DuckDB.NET.Bindings.pdb" Condition="Exists('$(OutputPath)DuckDB.NET.Bindings.pdb')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Download and include the native libraries into the NuGet package for Custom -->
+  <Target Name="DownloadNativeLibs" BeforeTargets="GenerateAdditionalSources" Condition="'$(BuildType)' == 'Custom'">
+    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=win-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-amd64.zip" />
+    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-amd64.zip" />
+    <MSBuild Condition="'$(SkipArm)' == ''" Projects="DownloadNativeLibs.targets" Properties="Rid=linux-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-arm64.zip" />
+  </Target>
+
+  <Target Name="UnzipCustomNativeLib" BeforeTargets="GenerateAdditionalSources" AfterTargets="DownloadNativeLibs" Condition="'$(BuildType)' == 'Custom' And '$(CustomNativeLibZip)' != ''">
+    <PropertyGroup>
+      <CustomRid Condition="'$(CustomRid)' == ''">linux-x64-glibc217</CustomRid>
+    </PropertyGroup>
+    <MakeDir Directories="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\native" />
+    <Unzip DestinationFolder="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\native" SourceFiles="$(CustomNativeLibZip)" />
+    <ItemGroup>
+      <None Include="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\**\*.so">
+        <Visible>false</Visible>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Pack>true</Pack>
+        <PackagePath>\runtimes</PackagePath>
+        <Link>runtimes\$(CustomRid)\native\%(FileName)%(Extension)</Link>
+      </None>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CleanNativeLibs" BeforeTargets="Clean" Condition="'$(BuildType)' == 'Custom'">
+    <RemoveDir Directories="obj\runtimes" />
+  </Target>
+
+  <ItemGroup Condition="'$(BuildType)' == 'Custom'">
+    <None Include="obj\runtimes\**\*.dll;obj\runtimes\**\*.so;obj\runtimes\**\*.dylib;">
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>\runtimes</PackagePath>
+      <Link>runtimes\%(RecursiveDir)\%(FileName)%(Extension)</Link>
+    </None>
   </ItemGroup>
 
 </Project>
