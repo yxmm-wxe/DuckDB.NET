@@ -60,6 +60,7 @@ Updated to DuckDB v1.4.3
   <Target Name="DownloadNativeLibs" BeforeTargets="GenerateAdditionalSources" Condition="'$(BuildType)' == 'Custom'">
     <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=win-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-amd64.zip" />
     <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-amd64.zip" />
+    <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=osx;LibUrl=$(DuckDbArtifactRoot)/libduckdb-osx-universal.zip" />
     <MSBuild Condition="'$(SkipArm)' == ''" Projects="DownloadNativeLibs.targets" Properties="Rid=linux-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-arm64.zip" />
   </Target>
 
@@ -70,7 +71,7 @@ Updated to DuckDB v1.4.3
     <MakeDir Directories="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\native" />
     <Unzip DestinationFolder="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\native" SourceFiles="$(CustomNativeLibZip)" />
     <ItemGroup>
-      <None Include="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\**\*.so">
+      <None Include="$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\**\*.so;$(MSBuildProjectDirectory)\obj\runtimes\$(CustomRid)\**\*.dylib">
         <Visible>false</Visible>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <Pack>true</Pack>

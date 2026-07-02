@@ -161,21 +161,28 @@ public static class NativeLibraryResolver
             return null;
         }
 
-        // Check relative to assembly directory: runtimes/{rid}/native/libduckdb.so
-        var libraryPath = Path.Combine(assemblyDir, "runtimes", rid, "native", "libduckdb.so");
-        if (File.Exists(libraryPath))
-        {
-            return libraryPath;
-        }
+        var candidateNames = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+            ? new[] { "libduckdb.dylib", "libduckdb.so" }
+            : new[] { "libduckdb.so", "libduckdb.dylib" };
 
-        // Check one level up (for development scenarios)
-        var parentDir = Path.GetDirectoryName(assemblyDir);
-        if (!string.IsNullOrEmpty(parentDir))
+        foreach (var candidateName in candidateNames)
         {
-            libraryPath = Path.Combine(parentDir, "runtimes", rid, "native", "libduckdb.so");
+            // Check relative to assembly directory: runtimes/{rid}/native/{library}
+            var libraryPath = Path.Combine(assemblyDir, "runtimes", rid, "native", candidateName);
             if (File.Exists(libraryPath))
             {
                 return libraryPath;
+            }
+
+            // Check one level up (for development scenarios)
+            var parentDir = Path.GetDirectoryName(assemblyDir);
+            if (!string.IsNullOrEmpty(parentDir))
+            {
+                libraryPath = Path.Combine(parentDir, "runtimes", rid, "native", candidateName);
+                if (File.Exists(libraryPath))
+                {
+                    return libraryPath;
+                }
             }
         }
 
